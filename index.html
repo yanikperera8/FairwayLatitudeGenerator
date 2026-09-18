@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fairway Latitude - Payment Plan Generator</title>
+    
+    <!-- html2pdf library for seamless PDF exporting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fairway: {
+                            50: '#fdf4f5',
+                            100: '#fbe9eb',
+                            200: '#f5cace',
+                            500: '#d93846',
+                            600: '#c81e3d',
+                            700: '#a3152f',
+                            800: '#7e0e22',
+                            900: '#540f15',
+                        },
+                        latitude: {
+                            gold: '#ffd100',
+                            accent: '#eab308'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Currency input field styling */
+        .currency-input {
+            position: relative;
+        }
+        .currency-input::before {
+            content: 'LKR';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        .currency-input input {
+            padding-left: 3.25rem;
+        }
+
+        /* Dedicated single-page CSS rules for PDF & Print */
+        .pdf-page {
+            box-sizing: border-box;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .pdf-page:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+            body {
+                background-color: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-full-width {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .pdf-page {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: 100vh;
+                max-height: 275mm;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-fairway-900 text-white shadow-lg print-full-width border-b-4 border-latitude-gold no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="bg-white p-2 rounded-lg shadow-md flex items-center justify-center">
+                    <!-- Vector SVG Logo -->
+                    <svg viewBox="0 0 300 360" class="h-10 w-auto" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 135 38 L 150 25 L 165 38" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 135 202 L 150 215 L 165 202" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 68 105 L 55 120 L 68 135" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 232 105 L 245 120 L 232 135" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 92 62 L 150 102 L 208 62" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 92 178 L 150 138 L 208 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 92 62 L 132 120 L 92 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                        <path d="M 208 62 L 168 120 L 208 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                        <rect x="143" y="113" width="14" height="14" transform="rotate(45 150 120)" fill="none" stroke="#000000" stroke-width="4.5" />
+                        <text x="150" y="270" font-family="'Inter', sans-serif" font-weight="900" font-size="22" letter-spacing="6" fill="#000000" text-anchor="middle">FAIRWAY</text>
+                        <line x1="45" y1="288" x2="255" y2="288" stroke="#c81e3d" stroke-width="2.5" />
+                        <text x="150" y="325" font-family="'Inter', sans-serif" font-weight="900" font-size="24" letter-spacing="7" fill="#000000" text-anchor="middle">LATITUDE</text>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-white">FAIRWAY LATITUDE</h1>
+                    <p class="text-latitude-gold text-xs font-semibold uppercase tracking-widest">Official Payment Plan Generator</p>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-fairway-800 text-latitude-gold border border-fairway-700">
+                    Sri Lanka Premier Living
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full print-full-width">
+        
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8 no-print transition-all duration-300 hover:shadow-md">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Quotation Inputs</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Enter client & pricing details to generate standard single-page payment plans.</p>
+                </div>
+                <span class="bg-fairway-50 text-fairway-700 text-xs font-bold px-3 py-1 rounded-md border border-fairway-200">
+                    Step 1 of 2
+                </span>
+            </div>
+            
+            <form id="generatorForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Client & Unit Info -->
+                <div class="space-y-4 lg:col-span-1 border-r-0 lg:border-r lg:border-slate-100 lg:pr-6">
+                    <div>
+                        <label for="clientName" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Client Name</label>
+                        <input type="text" id="clientName" required placeholder="e.g. Mrs. Tashya Cooray" class="w-full rounded-md border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fairway-600 focus:border-fairway-600 transition-colors shadow-sm">
+                    </div>
+                    <div>
+                        <label for="spaMonth" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">SPA Signing Month</label>
+                        <input type="month" id="spaMonth" required class="w-full rounded-md border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fairway-600 focus:border-fairway-600 transition-colors shadow-sm">
+                    </div>
+                    <div>
+                        <label for="unitNumber" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Unit Details / Floor</label>
+                        <input type="text" id="unitNumber" required placeholder="e.g. E1 & E2/ LEVEL 09 (2880 sq.ft)" class="w-full rounded-md border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fairway-600 focus:border-fairway-600 transition-colors shadow-sm">
+                    </div>
+                    <div class="pt-1">
+                        <label class="flex items-center cursor-pointer p-2.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="combinedUnit" class="h-4 w-4 rounded border-slate-300 text-fairway-600 focus:ring-fairway-600">
+                            <span class="ml-2.5 block text-xs font-semibold text-slate-800">
+                                Combined Unit
+                                <span class="block text-[11px] text-slate-500 font-normal">Reservation Fee: LKR 3,000,000 (Standard: LKR 1,500,000)</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="space-y-4 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-1">
+                        <label for="initialPrice" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Current Price (Initial)</label>
+                        <div class="currency-input">
+                            <input type="number" id="initialPrice" required min="0" step="any" placeholder="192,000,000" class="w-full rounded-md border border-slate-300 py-2 pr-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-fairway-600 focus:border-fairway-600 transition-colors shadow-sm">
+                        </div>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="discountedPrice" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Discounted Price (Final Base)</label>
+                        <div class="currency-input">
+                            <input type="number" id="discountedPrice" required min="0" step="any" placeholder="166,000,000" class="w-full rounded-md border border-slate-300 py-2 pr-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-fairway-600 focus:border-fairway-600 transition-colors shadow-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="md:col-span-2 bg-slate-50 rounded-xl p-3.5 flex items-center justify-between border border-slate-200 shadow-inner">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-fairway-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Calculated Discount:</span>
+                        </div>
+                        <span id="discountDisplay" class="text-base font-extrabold text-fairway-700">LKR 0.00</span>
+                    </div>
+
+                    <div class="md:col-span-2 pt-1 flex justify-end">
+                        <button type="submit" class="bg-fairway-700 hover:bg-fairway-800 text-white font-bold py-2.5 px-7 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-fairway-600 flex items-center gap-2 text-xs uppercase tracking-wider">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-latitude-gold" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd" />
+                            </svg>
+                            Generate Payment Plans
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section id="outputSection" class="hidden space-y-8 animate-fade-in pb-12">
+            
+            <div class="flex justify-between items-center border-b-2 border-fairway-800 pb-3 no-print">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800">Generated Payment Quotations</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">3 Plans Generated — Each plan renders on 1 dedicated page when exported or printed.</p>
+                </div>
+                <div class="flex gap-2.5">
+                    <button onclick="exportToPDF()" id="pdfBtn" class="bg-fairway-900 hover:bg-fairway-800 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-xs uppercase tracking-wider shadow-md border border-fairway-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-latitude-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export PDF (1 Page Per Plan)
+                    </button>
+                    <button onclick="window.print()" class="text-fairway-800 bg-white hover:bg-fairway-50 border border-fairway-200 font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-xs uppercase tracking-wider shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-fairway-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print Document
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Quotations Injection Container -->
+            <div id="plansContainer" class="space-y-8">
+                <!-- Single-page payment plans injected dynamically -->
+            </div>
+            
+        </section>
+
+    </main>
+
+    <script>
+        const form = document.getElementById('generatorForm');
+        const initialPriceInput = document.getElementById('initialPrice');
+        const discountedPriceInput = document.getElementById('discountedPrice');
+        const discountDisplay = document.getElementById('discountDisplay');
+        const outputSection = document.getElementById('outputSection');
+        const plansContainer = document.getElementById('plansContainer');
+
+        // Set default month input value to current month
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('spaMonth').value = `${year}-${month}`;
+        });
+
+        // Format currency with two decimal places
+        const formatLKR = (amount) => {
+            return new Intl.NumberFormat('en-LK', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        };
+
+        // Format date string for quotation footer
+        const formatDate = () => {
+            return new Date().toLocaleDateString('en-LK', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
+        };
+
+        // Ordinal helper function
+        const getOrdinal = (n) => {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        };
+
+        const calculateDiscountRealtime = () => {
+            const initial = parseFloat(initialPriceInput.value) || 0;
+            const discounted = parseFloat(discountedPriceInput.value) || 0;
+
+            if (initial > 0 && discounted > 0 && initial >= discounted) {
+                const discount = initial - discounted;
+                discountDisplay.textContent = 'LKR ' + formatLKR(discount);
+                discountDisplay.classList.remove('text-red-500');
+                discountDisplay.classList.add('text-fairway-700');
+            } else if (discounted > initial && initial > 0) {
+                discountDisplay.textContent = 'Invalid: Discounted > Initial';
+                discountDisplay.classList.remove('text-fairway-700');
+                discountDisplay.classList.add('text-red-500');
+            } else {
+                discountDisplay.textContent = 'LKR 0.00';
+                discountDisplay.classList.remove('text-red-500');
+                discountDisplay.classList.add('text-fairway-700');
+            }
+        };
+
+        initialPriceInput.addEventListener('input', calculateDiscountRealtime);
+        discountedPriceInput.addEventListener('input', calculateDiscountRealtime);
+
+        // Vector Logo Helper
+        const getFairwayLogoSvg = () => `
+            <svg viewBox="0 0 300 360" class="h-11 w-auto" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 135 38 L 150 25 L 165 38" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 135 202 L 150 215 L 165 202" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 68 105 L 55 120 L 68 135" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 232 105 L 245 120 L 232 135" fill="none" stroke="#ffd100" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 92 62 L 150 102 L 208 62" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 92 178 L 150 138 L 208 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 92 62 L 132 120 L 92 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                <path d="M 208 62 L 168 120 L 208 178" fill="none" stroke="#c81e3d" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter" />
+                <rect x="143" y="113" width="14" height="14" transform="rotate(45 150 120)" fill="none" stroke="#000000" stroke-width="4.5" />
+                <text x="150" y="270" font-family="'Inter', sans-serif" font-weight="900" font-size="22" letter-spacing="6" fill="#000000" text-anchor="middle">FAIRWAY</text>
+                <line x1="45" y1="288" x2="255" y2="288" stroke="#c81e3d" stroke-width="2.5" />
+                <text x="150" y="325" font-family="'Inter', sans-serif" font-weight="900" font-size="24" letter-spacing="7" fill="#000000" text-anchor="middle">LATITUDE</text>
+            </svg>
+        `;
+
+        window.exportToPDF = function() {
+            const element = document.getElementById('plansContainer');
+            const clientName = document.getElementById('clientName').value.trim() || 'Client';
+
+            const opt = {
+                margin:       [6, 6, 6, 6],
+                filename:     `${clientName} - Fairway Latitude Payment Plans.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['css', 'legacy'], avoid: '.pdf-page' }
+            };
+
+            const btn = document.getElementById('pdfBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `
+                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg> Building 1-Page PDF...
+            `;
+            btn.disabled = true;
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("PDF Export Error:", err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        };
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const clientName = document.getElementById('clientName').value.trim();
+            const spaMonthVal = document.getElementById('spaMonth').value;
+            const unitNumber = document.getElementById('unitNumber').value.trim();
+            const isCombined = document.getElementById('combinedUnit').checked;
+            const initialPrice = parseFloat(initialPriceInput.value);
+            const discountedPrice = parseFloat(discountedPriceInput.value);
+
+            if (discountedPrice > initialPrice) {
+                const messageBox = document.createElement('div');
+                messageBox.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-xl z-50 text-sm font-bold';
+                messageBox.textContent = "Discounted price cannot be greater than the initial price.";
+                document.body.appendChild(messageBox);
+                setTimeout(() => messageBox.remove(), 3500);
+                return;
+            }
+
+            const basePrice = discountedPrice;
+            const discountAmount = initialPrice - discountedPrice;
+            const reservationFee = isCombined ? 3000000 : 1500000;
+            const unitTypeDesc = isCombined ? 'Combined Unit' : 'Standard Unit';
+
+            let tablesHTML = '';
+
+            // Quotation Page HTML Template (optimized for 1 single A4 page)
+            const createQuotationPage = (planTitle, planSubtitle, rowsHTML) => `
+                <div class="pdf-page bg-white p-6 sm:p-7 border border-slate-300 shadow-sm rounded-sm max-w-[210mm] mx-auto">
+                    
+                    <!-- Header Section -->
+                    <div class="flex justify-between items-start border-b-2 border-fairway-900 pb-3 mb-4">
+                        <div>
+                            <h1 class="text-2xl font-black uppercase tracking-wider text-slate-900">QUOTATION</h1>
+                            <h2 class="text-base font-bold mt-0.5 text-fairway-800">${clientName}</h2>
+                            <div class="mt-2">
+                                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-500">PAYMENT PLAN</h3>
+                                <p class="text-xs font-bold text-fairway-700">${planTitle}</p>
+                                <p class="text-[11px] text-slate-500 font-medium">${planSubtitle}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            ${getFairwayLogoSvg()}
+                        </div>
+                    </div>
+
+                    <!-- Price Summary Box -->
+                    <div class="mb-4 w-full md:w-2/3 lg:w-1/2 text-xs border border-slate-300 rounded-sm overflow-hidden">
+                       <div class="flex border-b border-slate-300 px-3 py-1.5 bg-slate-50">
+                           <div class="w-1/2 font-bold text-slate-700">CURRENT PRICE (LKR.)</div>
+                           <div class="w-1/2 text-right font-medium text-slate-900">${formatLKR(initialPrice)}</div>
+                       </div>
+                       <div class="flex border-b border-slate-300 px-3 py-1.5 bg-slate-50">
+                           <div class="w-1/2 font-bold text-slate-700">DISCOUNT (LKR.)</div>
+                           <div class="w-1/2 text-right font-medium text-slate-900">${formatLKR(discountAmount)}</div>
+                       </div>
+                       <div class="flex px-3 py-1.5 font-black bg-fairway-50 text-fairway-900 border-b border-fairway-200">
+                           <div class="w-1/2">SPECIAL DISCOUNTED PRICE (LKR.)</div>
+                           <div class="w-1/2 text-right">${formatLKR(basePrice)}</div>
+                       </div>
+                    </div>
+
+                    <!-- Payment Schedule Table -->
+                    <table class="w-full text-xs border-collapse border border-slate-300 mb-4">
+                        <thead>
+                            <tr class="bg-fairway-900 text-white">
+                                <th class="py-2 px-2.5 border border-slate-400 text-left font-bold uppercase tracking-wider">DESCRIPTION</th>
+                                <th class="py-2 px-2.5 border border-slate-400 text-center font-bold uppercase tracking-wider w-20">MONTH</th>
+                                <th class="py-2 px-2.5 border border-slate-400 text-center font-bold uppercase tracking-wider w-12">%</th>
+                                <th class="py-2 px-2.5 border border-slate-400 text-right font-bold uppercase tracking-wider">
+                                    ${unitNumber} (${unitTypeDesc})<br>INSTALLMENT (LKR.)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-800">
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
+
+                    <p class="text-[10px] italic text-slate-500 mb-4">Note: Above quoted prices are valid for only 14 days from the date of quotation.</p>
+
+                    <!-- Footer Section -->
+                    <div class="flex justify-between items-end border-t border-slate-300 pt-3 mt-auto">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-extrabold text-fairway-900 uppercase tracking-widest">FAIRWAY LATITUDE</span>
+                        </div>
+                        <span class="text-[9px] font-medium text-slate-500">Generated on ${formatDate()}</span>
+                    </div>
+                </div>
+            `;
+
+            const generatePlanRows = (spaPct, nextMonthPct, monthlyPct, numMonthly, spaDateStr) => {
+                let rows = '';
+                const spaAmount = basePrice * (spaPct / 100);
+                
+                const spaYear = parseInt(spaDateStr.split('-')[0]);
+                const spaMonth = parseInt(spaDateStr.split('-')[1]);
+                
+                const lastDayOfSpaMonth = new Date(spaYear, spaMonth, 0).getDate();
+                const spaMonthName = new Date(spaYear, spaMonth - 1, 1).toLocaleString('default', { month: 'long' });
+                const spaDeadlineStr = `On or before ${getOrdinal(lastDayOfSpaMonth)} ${spaMonthName} ${spaYear}`;
+
+                let currentPaymentDate = new Date(spaYear, spaMonth - 1, 1);
+                
+                let instCounter = 1;
+                let monthCounter = 1;
+
+                // 1. Reservation Fee
+                rows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="py-2 px-2.5 border border-slate-300 font-semibold">Reservation Fee</td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-center">Immediately</td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-center">-</td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-right font-medium">${formatLKR(reservationFee)}</td>
+                    </tr>
+                `;
+                
+                // 2. 1st Installment (SPA)
+                rows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="py-2 px-2.5 border border-slate-300">
+                            <span class="font-bold">${getOrdinal(instCounter)} Installment:</span> At the Execution of Sales & Purchase Agreement<br>
+                            <span class="text-[10px] text-slate-600">${spaDeadlineStr}</span>
+                        </td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-center">Month ${monthCounter.toString().padStart(2, '0')}</td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-center font-medium">${spaPct}%</td>
+                        <td class="py-2 px-2.5 border border-slate-300 text-right font-medium">${formatLKR(spaAmount)}</td>
+                    </tr>
+                `;
+                instCounter++;
+                monthCounter++;
+
+                // 3. Next Month Installment (Option 1)
+                if (nextMonthPct) {
+                    currentPaymentDate.setMonth(currentPaymentDate.getMonth() + 1);
+                    const mName = currentPaymentDate.toLocaleString('default', { month: 'long' });
+                    const y = currentPaymentDate.getFullYear();
+                    const nextMonthAmount = basePrice * (nextMonthPct / 100);
+                    
+                    rows += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-200">
+                            <td class="py-2 px-2.5 border border-slate-300">
+                                <span class="font-bold">${getOrdinal(instCounter)} Installment:</span> On 15th ${mName} ${y}
+                            </td>
+                            <td class="py-2 px-2.5 border border-slate-300 text-center">Month ${monthCounter.toString().padStart(2, '0')}</td>
+                            <td class="py-2 px-2.5 border border-slate-300 text-center font-medium">${nextMonthPct}%</td>
+                            <td class="py-2 px-2.5 border border-slate-300 text-right font-medium">${formatLKR(nextMonthAmount)}</td>
+                        </tr>
+                    `;
+                    instCounter++;
+                    monthCounter++;
+                }
+
+                // 4. Monthly Installments
+                if (monthlyPct && numMonthly) {
+                    const monthlyAmount = basePrice * (monthlyPct / 100);
+                    for (let i = 0; i < numMonthly; i++) {
+                        currentPaymentDate.setMonth(currentPaymentDate.getMonth() + 1);
+                        const mName = currentPaymentDate.toLocaleString('default', { month: 'long' });
+                        const y = currentPaymentDate.getFullYear();
+                        
+                        const isLast = (i === numMonthly - 1);
+                        const isPenultimate = (i === numMonthly - 2);
+
+                        if (isLast) {
+                            rows += `
+                                <tr class="hover:bg-slate-50 border-b border-slate-200">
+                                    <td class="py-2 px-2.5 border border-slate-300">
+                                        <span class="font-bold">${getOrdinal(instCounter)} Installment:</span> Upon the developer notifying the purchaser to take over possession of the unit.
+                                    </td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center">-</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center font-medium">${monthlyPct}%</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-right font-medium">${formatLKR(monthlyAmount)}</td>
+                                </tr>
+                            `;
+                        } else if (isPenultimate) {
+                            rows += `
+                                <tr class="hover:bg-slate-50 border-b border-slate-200 bg-amber-50/50">
+                                    <td class="py-2 px-2.5 border border-slate-300">
+                                        <span class="font-bold">${getOrdinal(instCounter)} Installment:</span> On 15th ${mName} ${y}<br>
+                                        <span class="text-[10px] font-bold text-fairway-800">(Less Reservation Fee)</span>
+                                    </td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center">Month ${monthCounter.toString().padStart(2, '0')}</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center font-medium">${monthlyPct}%</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-right font-bold text-fairway-900">${formatLKR(monthlyAmount - reservationFee)}</td>
+                                </tr>
+                            `;
+                            instCounter++;
+                            monthCounter++;
+                        } else {
+                            rows += `
+                                <tr class="hover:bg-slate-50 border-b border-slate-200">
+                                    <td class="py-2 px-2.5 border border-slate-300">
+                                        <span class="font-bold">${getOrdinal(instCounter)} Installment:</span> On 15th ${mName} ${y}
+                                    </td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center">Month ${monthCounter.toString().padStart(2, '0')}</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-center font-medium">${monthlyPct}%</td>
+                                    <td class="py-2 px-2.5 border border-slate-300 text-right font-medium">${formatLKR(monthlyAmount)}</td>
+                                </tr>
+                            `;
+                            instCounter++;
+                            monthCounter++;
+                        }
+                    }
+                }
+
+                // 5. Total Row
+                rows += `
+                    <tr class="bg-slate-100 font-bold border-t-2 border-slate-400">
+                        <td class="py-2.5 px-2.5 border border-slate-300 text-right text-slate-900" colspan="2">TOTAL</td>
+                        <td class="py-2.5 px-2.5 border border-slate-300 text-center text-slate-900">100%</td>
+                        <td class="py-2.5 px-2.5 border border-slate-300 text-right text-slate-900">${formatLKR(basePrice)}</td>
+                    </tr>
+                `;
+
+                return rows;
+            };
+
+            // Generate Option 1 (Single Page)
+            tablesHTML += createQuotationPage(
+                'Option 1: Accelerated Payment Plan',
+                '30% Upon Signing SPA, 20% Next Month, 10% Monthly',
+                generatePlanRows(30, 20, 10, 5, spaMonthVal)
+            );
+
+            // Generate Option 2 (Single Page)
+            tablesHTML += createQuotationPage(
+                'Option 2: Standard Payment Plan',
+                '30% Upon Signing SPA, 10% Monthly',
+                generatePlanRows(30, null, 10, 7, spaMonthVal)
+            );
+
+            // Generate Option 3 (Single Page)
+            tablesHTML += createQuotationPage(
+                'Option 3: Extended SPA Plan',
+                '20% Upon Signing SPA, 10% Monthly',
+                generatePlanRows(20, null, 10, 8, spaMonthVal)
+            );
+
+            // Render and show
+            plansContainer.innerHTML = tablesHTML;
+            outputSection.classList.remove('hidden');
+            
+            setTimeout(() => {
+                outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        });
+    </script>
+</body>
+</html>
